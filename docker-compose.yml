@@ -1,0 +1,32 @@
+services:
+  api:
+    build: .
+    image: cold-chain-exposure:latest
+    environment:
+      HOST: 0.0.0.0
+      PORT: "8000"
+    ports:
+      # 宿主机端口可通过环境变量配置，例如 HOST_PORT=18000 docker compose up
+      - "${HOST_PORT:-8000}:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=2).read()"
+      interval: 3s
+      timeout: 3s
+      retries: 10
+      start_period: 2s
+    restart: unless-stopped
+
+  verify:
+    image: cold-chain-exposure:latest
+    build: .
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      API_BASE: http://api:8000
+    entrypoint: ["./verify.sh"]
+    restart: "no"
